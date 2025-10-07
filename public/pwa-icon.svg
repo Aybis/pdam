@@ -1,0 +1,6 @@
+<!-- Simple SVG placeholder icon for PWA - This is a temporary placeholder -->
+<!-- Replace with proper PNG icons for production -->
+<svg width="192" height="192" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="192" fill="#3b82f6"/>
+  <text x="96" y="110" font-family="Arial, sans-serif" font-size="64" fill="white" text-anchor="middle" font-weight="bold">PDAM</text>
+</svg>
