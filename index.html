@@ -13,7 +13,7 @@
     />
     <style>
       body {
-        font-family: "Inter", sans-serif;
+        font-family: 'Inter', sans-serif;
       }
       .view {
         display: none;
@@ -84,6 +84,52 @@
               class="text-red-500 text-sm mt-4 text-center"
             ></p>
           </form>
+          <div class="text-center mt-4">
+            <button
+              id="admin-login-button"
+              class="text-sm text-gray-400 hover:text-white"
+            >
+              Masuk sebagai Admin
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin View -->
+      <div id="admin-view" class="view">
+        <div class="bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-3xl font-bold">Dasbor Admin</h2>
+            <button
+              id="admin-logout-button"
+              class="bg-gray-700 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+            >
+              Keluar
+            </button>
+          </div>
+          <div class="bg-gray-900 rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm text-left text-gray-300">
+                <thead class="text-xs text-gray-400 uppercase bg-gray-700">
+                  <tr>
+                    <th scope="col" class="py-3 px-6">Nama</th>
+                    <th scope="col" class="py-3 px-6">Bulan</th>
+                    <th scope="col" class="py-3 px-6 text-right">
+                      Angka Meter
+                    </th>
+                    <th scope="col" class="py-3 px-6 text-right">Penggunaan</th>
+                    <th scope="col" class="py-3 px-6 text-right">Tagihan</th>
+                    <th scope="col" class="py-3 px-6 text-center">
+                      Foto Bukti
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="admin-table-body">
+                  <!-- Admin data will be populated here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -147,7 +193,7 @@
             </div>
           </div>
 
-          <!-- NEW: History Table -->
+          <!-- History Table -->
           <div class="mt-6">
             <h3 class="text-xl font-semibold mb-4">Rincian Riwayat</h3>
             <div class="bg-gray-900 rounded-lg overflow-hidden">
@@ -163,6 +209,9 @@
                         Penggunaan (m³)
                       </th>
                       <th scope="col" class="py-3 px-6 text-right">Tagihan</th>
+                      <th scope="col" class="py-3 px-6 text-center">
+                        Foto Bukti
+                      </th>
                     </tr>
                   </thead>
                   <tbody id="history-table-body">
@@ -210,7 +259,7 @@
               <label
                 for="meter-image"
                 class="block mb-2 text-sm font-medium text-gray-300"
-                >Pindai Meteran dengan Kamera</label
+                >Unggah Foto Meteran (Bukti)</label
               >
               <input
                 type="file"
@@ -303,125 +352,158 @@
       </div>
     </div>
 
+    <!-- Image Viewer Modal -->
+    <div
+      id="image-modal"
+      class="modal fixed inset-0 bg-black bg-opacity-80 items-center justify-center p-4 z-50"
+    >
+      <div
+        class="bg-gray-800 p-4 rounded-2xl shadow-2xl w-full max-w-3xl relative"
+      >
+        <button
+          id="image-modal-close"
+          class="absolute -top-4 -right-4 bg-red-600 text-white rounded-full h-10 w-10 flex items-center justify-center text-2xl font-bold"
+        >
+          &times;
+        </button>
+        <img
+          id="modal-image"
+          src=""
+          alt="Bukti Foto Meteran"
+          class="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+        />
+      </div>
+    </div>
+
     <script>
-      window.addEventListener("DOMContentLoaded", () => {
-        const loginView = document.getElementById("login-view");
-        const dashboardView = document.getElementById("dashboard-view");
-        const addReadingView = document.getElementById("add-reading-view");
-        const loginForm = document.getElementById("login-form");
-        const loginError = document.getElementById("login-error");
-        const usernameInput = document.getElementById("username");
-        const dashboardUsername = document.getElementById("dashboard-username");
-        const logoutButton = document.getElementById("logout-button");
+      window.addEventListener('DOMContentLoaded', () => {
+        const loginView = document.getElementById('login-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const addReadingView = document.getElementById('add-reading-view');
+        const adminView = document.getElementById('admin-view');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const usernameInput = document.getElementById('username');
+        const dashboardUsername = document.getElementById('dashboard-username');
+        const logoutButton = document.getElementById('logout-button');
+        const adminLogoutButton = document.getElementById(
+          'admin-logout-button',
+        );
         const showAddReadingButton = document.getElementById(
-          "show-add-reading-button",
+          'show-add-reading-button',
         );
         const backToDashboardButton = document.getElementById(
-          "back-to-dashboard-button",
+          'back-to-dashboard-button',
         );
         const lastMeterReadingEl =
-          document.getElementById("last-meter-reading");
-        const meterImageInput = document.getElementById("meter-image");
-        const ocrStatus = document.getElementById("ocr-status");
+          document.getElementById('last-meter-reading');
+        const meterImageInput = document.getElementById('meter-image');
+        const ocrStatus = document.getElementById('ocr-status');
         const currentMeterReadingInput = document.getElementById(
-          "current-meter-reading",
+          'current-meter-reading',
         );
-        const resultView = document.getElementById("result-view");
-        const resultUsage = document.getElementById("result-usage");
-        const resultBill = document.getElementById("result-bill");
-        const saveDataButton = document.getElementById("save-data-button");
+        const resultView = document.getElementById('result-view');
+        const resultUsage = document.getElementById('result-usage');
+        const resultBill = document.getElementById('result-bill');
+        const saveDataButton = document.getElementById('save-data-button');
         const saveStatusMessage = document.getElementById(
-          "save-status-message",
+          'save-status-message',
         );
-        const latestUsageEl = document.getElementById("latest-usage");
-        const latestBillEl = document.getElementById("latest-bill");
-        const confirmModal = document.getElementById("confirm-modal");
+        const latestUsageEl = document.getElementById('latest-usage');
+        const latestBillEl = document.getElementById('latest-bill');
+        const confirmModal = document.getElementById('confirm-modal');
         const modalConfirmButton = document.getElementById(
-          "modal-confirm-button",
+          'modal-confirm-button',
         );
         const modalCancelButton = document.getElementById(
-          "modal-cancel-button",
+          'modal-cancel-button',
         );
-        const historyTableBody = document.getElementById("history-table-body");
+        const historyTableBody = document.getElementById('history-table-body');
         const refreshDataButton = document.getElementById(
-          "refresh-data-button",
+          'refresh-data-button',
         );
+        const adminLoginButton = document.getElementById('admin-login-button');
+        const adminTableBody = document.getElementById('admin-table-body');
+        const imageModal = document.getElementById('image-modal');
+        const modalImage = document.getElementById('modal-image');
+        const imageModalClose = document.getElementById('image-modal-close');
 
         let chart = null;
         let allUsersData = [];
         let currentUserData = null;
         let lastReading = 0;
         let dataToSaveOnClick = {};
+        let selectedFile = null;
 
         // --- Google Sheet Configuration ---
-        const SHEET_ID = "14JQvLHFkNIah3s0Tq5kbQYCbsQEF6SjZXvUZ21hVpVg";
-        const GID = "0"; // GID for the first sheet
+        const SHEET_ID = '14JQvLHFkNIah3s0Tq5kbQYCbsQEF6SjZXvUZ21hVpVg';
+        const GID = '0'; // GID for the first sheet
         const sheetURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
         const SCRIPT_URL =
-          "https://script.google.com/macros/s/AKfycbyf80MnYK3_Kfx00YkB-aI-hZmKuz2oC5cbI2XDXLlxYu-TbIR1h4JOqOlZ_ojrT8SH/exec";
+          'https://script.google.com/macros/s/AKfycbyf80MnYK3_Kfx00YkB-aI-hZmKuz2oC5cbI2XDXLlxYu-TbIR1h4JOqOlZ_ojrT8SH/exec';
 
         // --- Data Fetching and Processing ---
-        async function fetchSheetData() {
+        async function fetchSheetData(isAdmin = false) {
           try {
-            // FIX: Added 'cache: 'no-store'' to force the browser to always fetch the latest version.
-            const response = await fetch(
-              `${sheetURL}&t=${new Date().getTime()}`,
-              { cache: "no-store" },
-            );
+            const url = isAdmin
+              ? SCRIPT_URL
+              : `${sheetURL}&t=${new Date().getTime()}`;
+            const options = isAdmin
+              ? { method: 'GET', redirect: 'follow' }
+              : { cache: 'no-store' };
+            const response = await fetch(url, options);
+
             if (!response.ok) {
               throw new Error(
                 `Network response was not ok: ${response.statusText}`,
               );
             }
-            const csvText = await response.text();
-            console.log(csvText, "<<< csv");
-            return parseCSV(csvText);
+
+            if (isAdmin) {
+              return await response.json();
+            } else {
+              const csvText = await response.text();
+              return parseCSV(csvText);
+            }
           } catch (error) {
-            console.error("Error fetching sheet data:", error);
-            loginError.textContent =
-              'Gagal memuat data. Periksa koneksi Anda dan pastikan Google Sheet sudah "Dipublikasikan ke web".';
+            console.error('Error fetching data:', error);
+            loginError.textContent = 'Gagal memuat data. Periksa koneksi Anda.';
             return [];
           }
         }
 
         function robustSplit(rowStr) {
           const result = [];
-          let current = "";
+          let current = '';
           let inQuote = false;
           for (let i = 0; i < rowStr.length; i++) {
             const char = rowStr[i];
-            if (char === '"' && (i === 0 || rowStr[i - 1] !== "\\")) {
+            if (char === '"' && (i === 0 || rowStr[i - 1] !== '\\')) {
               inQuote = !inQuote;
-            } else if (char === "," && !inQuote) {
+            } else if (char === ',' && !inQuote) {
               result.push(current);
-              current = "";
+              current = '';
             } else {
               current += char;
             }
           }
           result.push(current);
-          return result.map((v) => v.trim().replace(/^"|"$/g, ""));
+          return result.map((v) => v.trim().replace(/^"|"$/g, ''));
         }
 
         function parseCSV(text) {
-          const rows = text.split("\n").map((row) => row.trim());
+          const rows = text.split('\n').map((row) => row.trim());
 
           const subHeaderRowIndex = rows.findIndex((row) =>
-            row.toLowerCase().includes("meteran,penggunaan,tagihan"),
+            row.toLowerCase().includes('meteran,penggunaan,tagihan'),
           );
           if (subHeaderRowIndex === -1) {
-            console.error(
-              "Could not find the sub-header row containing 'Meteran,Penggunaan,Tagihan'.",
-            );
             return [];
           }
           const subHeaderRow = robustSplit(rows[subHeaderRowIndex]);
 
           const monthHeaderRowIndex = subHeaderRowIndex - 1;
           if (monthHeaderRowIndex < 0) {
-            console.error(
-              "Could not find a month header row above the sub-header row.",
-            );
             return [];
           }
           const monthHeaderRow = robustSplit(rows[monthHeaderRowIndex]);
@@ -432,7 +514,7 @@
               cols.length > 1 &&
               !isNaN(parseInt(cols[0], 10)) &&
               cols[1] &&
-              cols[1].trim() !== ""
+              cols[1].trim() !== ''
             );
           });
 
@@ -447,7 +529,7 @@
               users[name] = { name: name, readings: [] };
             }
 
-            let currentMonth = "";
+            let currentMonth = '';
             for (let i = 2; i < subHeaderRow.length; i++) {
               if (monthHeaderRow[i]) {
                 currentMonth = monthHeaderRow[i];
@@ -467,19 +549,26 @@
                   meteran: NaN,
                   penggunaan: NaN,
                   tagihan: NaN,
+                  foto: null,
                 };
                 users[name].readings.push(reading);
               }
 
-              if (subHeader === "Meteran")
+              if (subHeader === 'Meteran')
                 reading.meteran = parseInt(value, 10);
-              if (subHeader === "Penggunaan")
+              if (subHeader === 'Penggunaan')
                 reading.penggunaan = parseInt(value, 10);
-              if (subHeader === "Tagihan")
+              if (subHeader === 'Tagihan')
                 reading.tagihan = parseInt(
-                  (value || "").replace(/[^0-9]/g, ""),
+                  (value || '').replace(/[^0-9]/g, ''),
                   10,
                 );
+              if (
+                subHeader.toLowerCase().includes('image') ||
+                subHeader.toLowerCase().includes('foto')
+              ) {
+                reading.foto = value;
+              }
             }
           });
 
@@ -492,10 +581,10 @@
         }
 
         // --- Authentication ---
-        loginForm.addEventListener("submit", async (e) => {
+        loginForm.addEventListener('submit', async (e) => {
           e.preventDefault();
-          loginError.textContent = "Mencoba masuk...";
-          allUsersData = await fetchSheetData();
+          loginError.textContent = 'Mencoba masuk...';
+          allUsersData = await fetchSheetData(false);
           const username = usernameInput.value.trim();
           const user = allUsersData.find(
             (u) => u.name.toLowerCase() === username.toLowerCase(),
@@ -505,23 +594,27 @@
             showDashboard();
           } else {
             loginError.textContent =
-              "Pengguna tidak ditemukan. Silakan periksa nama.";
+              'Pengguna tidak ditemukan. Silakan periksa nama.';
           }
         });
 
-        logoutButton.addEventListener("click", () => {
+        logoutButton.addEventListener('click', () => {
           currentUserData = null;
-          usernameInput.value = "";
-          loginError.textContent = "";
+          usernameInput.value = '';
+          loginError.textContent = '';
+          showLogin();
+        });
+
+        adminLogoutButton.addEventListener('click', () => {
           showLogin();
         });
 
         // --- View Management ---
         function showView(view) {
           document
-            .querySelectorAll(".view")
-            .forEach((v) => v.classList.remove("active-view"));
-          view.classList.add("active-view");
+            .querySelectorAll('.view')
+            .forEach((v) => v.classList.remove('active-view'));
+          view.classList.add('active-view');
         }
 
         function showLogin() {
@@ -536,14 +629,49 @@
             latestUsageEl.textContent = `${latestReading.penggunaan || 0} m³`;
             latestBillEl.textContent = `Rp ${(
               latestReading.tagihan || 0
-            ).toLocaleString("id-ID")}`;
+            ).toLocaleString('id-ID')}`;
           } else {
-            latestUsageEl.textContent = "Tidak ada data";
-            latestBillEl.textContent = "Tidak ada data";
+            latestUsageEl.textContent = 'Tidak ada data';
+            latestBillEl.textContent = 'Tidak ada data';
           }
           renderChart();
-          renderHistoryTable(); // Call the new function
+          renderHistoryTable();
           showView(dashboardView);
+        }
+
+        async function showAdminDashboard() {
+          const adminData = await fetchSheetData(true);
+          adminTableBody.innerHTML = '';
+          if (adminData.status === 'success') {
+            adminData.data.forEach((item) => {
+              const row = document.createElement('tr');
+              row.className = 'bg-gray-800 border-b border-gray-700';
+
+              let photoCell = 'Tidak Ada';
+              if (item.foto) {
+                photoCell = `<button data-img-url="${item.foto}" class="view-photo-button text-blue-400 hover:underline">Lihat Foto</button>`;
+              }
+
+              row.innerHTML = `
+                            <td class="py-4 px-6 font-medium whitespace-nowrap">${
+                              item.nama
+                            }</td>
+                            <td class="py-4 px-6">${item.bulan}</td>
+                            <td class="py-4 px-6 text-right">${
+                              item.meteran
+                            }</td>
+                            <td class="py-4 px-6 text-right">${
+                              item.penggunaan
+                            } m³</td>
+                            <td class="py-4 px-6 text-right">Rp ${item.tagihan.toLocaleString(
+                              'id-ID',
+                            )}</td>
+                            <td class="py-4 px-6 text-center">${photoCell}</td>
+                         `;
+              adminTableBody.appendChild(row);
+            });
+          }
+          showView(adminView);
         }
 
         function showAddReading() {
@@ -553,38 +681,38 @@
               : 0;
           lastMeterReadingEl.textContent = `${lastReading} m³`;
           const date = new Date();
-          const monthYear = date.toLocaleString("default", {
-            month: "long",
-            year: "numeric",
+          const monthYear = date.toLocaleString('default', {
+            month: 'long',
+            year: 'numeric',
           });
           document.getElementById(
-            "current-month-display",
+            'current-month-display',
           ).textContent = `Menghitung untuk: ${monthYear}`;
-          currentMeterReadingInput.value = "";
-          meterImageInput.value = "";
-          ocrStatus.textContent = "";
-          resultView.classList.add("hidden");
-          saveStatusMessage.textContent = "";
+          currentMeterReadingInput.value = '';
+          meterImageInput.value = '';
+          ocrStatus.textContent = '';
+          resultView.classList.add('hidden');
+          saveStatusMessage.textContent = '';
           showView(addReadingView);
         }
 
-        // --- NEW: History Table Rendering ---
         function renderHistoryTable() {
-          historyTableBody.innerHTML = ""; // Clear existing rows
+          historyTableBody.innerHTML = '';
           if (
             !currentUserData.readings ||
             currentUserData.readings.length === 0
           ) {
-            historyTableBody.innerHTML = `<tr><td colspan="4" class="py-4 px-6 text-center text-gray-400">Tidak ada data riwayat.</td></tr>`;
+            historyTableBody.innerHTML = `<tr><td colspan="5" class="py-4 px-6 text-center text-gray-400">Tidak ada data riwayat.</td></tr>`;
             return;
           }
-
-          // Show newest data first
           const reversedReadings = [...currentUserData.readings].reverse();
-
           reversedReadings.forEach((reading) => {
-            const row = document.createElement("tr");
-            row.className = "bg-gray-800 border-b border-gray-700";
+            const row = document.createElement('tr');
+            row.className = 'bg-gray-800 border-b border-gray-700';
+            let photoCell = reading.foto
+              ? `<button data-img-url="${reading.foto}" class="view-photo-button text-blue-400 hover:underline">Lihat</button>`
+              : 'N/A';
+
             row.innerHTML = `
                         <td class="py-4 px-6 font-medium whitespace-nowrap">${
                           reading.month
@@ -594,16 +722,16 @@
                           reading.penggunaan
                         } m³</td>
                         <td class="py-4 px-6 text-right">Rp ${reading.tagihan.toLocaleString(
-                          "id-ID",
+                          'id-ID',
                         )}</td>
+                        <td class="py-4 px-6 text-center">${photoCell}</td>
                     `;
             historyTableBody.appendChild(row);
           });
         }
 
-        // --- Charting ---
         function renderChart() {
-          const ctx = document.getElementById("usageChart").getContext("2d");
+          const ctx = document.getElementById('usageChart').getContext('2d');
           const labels = currentUserData.readings.map((r) => r.month);
           const usageData = currentUserData.readings.map((r) => r.penggunaan);
           const billData = currentUserData.readings.map((r) => r.tagihan);
@@ -611,25 +739,25 @@
             chart.destroy();
           }
           chart = new Chart(ctx, {
-            type: "line",
+            type: 'line',
             data: {
               labels: labels,
               datasets: [
                 {
-                  label: "Penggunaan (m³)",
+                  label: 'Penggunaan (m³)',
                   data: usageData,
-                  borderColor: "#3b82f6",
-                  backgroundColor: "rgba(59, 130, 246, 0.1)",
-                  yAxisID: "yUsage",
+                  borderColor: '#3b82f6',
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  yAxisID: 'yUsage',
                   tension: 0.3,
                   fill: true,
                 },
                 {
-                  label: "Tagihan (Rp)",
+                  label: 'Tagihan (Rp)',
                   data: billData,
-                  borderColor: "#10b981",
-                  backgroundColor: "rgba(16, 185, 129, 0.1)",
-                  yAxisID: "yBill",
+                  borderColor: '#10b981',
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                  yAxisID: 'yBill',
                   tension: 0.3,
                   fill: true,
                 },
@@ -637,36 +765,36 @@
             },
             options: {
               responsive: true,
-              interaction: { mode: "index", intersect: false },
+              interaction: { mode: 'index', intersect: false },
               scales: {
                 x: {
-                  grid: { color: "rgba(255, 255, 255, 0.1)" },
-                  ticks: { color: "#d1d5db" },
+                  grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                  ticks: { color: '#d1d5db' },
                 },
                 yUsage: {
-                  type: "linear",
-                  position: "left",
+                  type: 'linear',
+                  position: 'left',
                   title: {
                     display: true,
-                    text: "Penggunaan (m³)",
-                    color: "#3b82f6",
+                    text: 'Penggunaan (m³)',
+                    color: '#3b82f6',
                   },
-                  grid: { color: "rgba(255, 255, 255, 0.1)" },
-                  ticks: { color: "#d1d5db" },
+                  grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                  ticks: { color: '#d1d5db' },
                 },
                 yBill: {
-                  type: "linear",
-                  position: "right",
+                  type: 'linear',
+                  position: 'right',
                   title: {
                     display: true,
-                    text: "Tagihan (Rp)",
-                    color: "#10b981",
+                    text: 'Tagihan (Rp)',
+                    color: '#10b981',
                   },
                   grid: { drawOnChartArea: false },
                   ticks: {
-                    color: "#d1d5db",
+                    color: '#d1d5db',
                     callback: function (value) {
-                      return "Rp" + value / 1000 + "k";
+                      return 'Rp' + value / 1000 + 'k';
                     },
                   },
                 },
@@ -675,14 +803,13 @@
           });
         }
 
-        // --- Calculation Logic ---
         function calculateBill(currentReading) {
           const usage = currentReading - lastReading;
           if (usage < 0)
             return {
               usage: 0,
               bill: 0,
-              error: "Angka saat ini tidak boleh lebih rendah dari sebelumnya.",
+              error: 'Angka saat ini tidak boleh lebih rendah dari sebelumnya.',
             };
           let bill = 0;
           if (usage <= 20) {
@@ -693,62 +820,75 @@
           return { usage, bill, error: null };
         }
 
-        currentMeterReadingInput.addEventListener("input", () => {
+        currentMeterReadingInput.addEventListener('input', () => {
           const currentReading = parseInt(currentMeterReadingInput.value, 10);
           if (!isNaN(currentReading) && currentReading >= lastReading) {
             const { usage, bill } = calculateBill(currentReading);
             resultUsage.textContent = `${usage} m³`;
-            resultBill.textContent = `Rp ${bill.toLocaleString("id-ID")}`;
-            resultView.classList.remove("hidden");
+            resultBill.textContent = `Rp ${bill.toLocaleString('id-ID')}`;
+            resultView.classList.remove('hidden');
           } else {
-            resultView.classList.add("hidden");
+            resultView.classList.add('hidden');
           }
         });
 
-        // --- OCR ---
-        meterImageInput.addEventListener("change", async (e) => {
+        meterImageInput.addEventListener('change', async (e) => {
           const file = e.target.files[0];
           if (!file) return;
-          ocrStatus.textContent = "Membaca gambar...";
+          selectedFile = file;
+          ocrStatus.textContent = 'Membaca gambar...';
           try {
             const {
               data: { text },
-            } = await Tesseract.recognize(file, "eng");
+            } = await Tesseract.recognize(file, 'eng');
             const numbers = text.match(/\d+/g);
             if (numbers) {
-              const foundNumber = numbers.join("");
+              const foundNumber = numbers.join('');
               currentMeterReadingInput.value = foundNumber;
-              currentMeterReadingInput.dispatchEvent(new Event("input"));
+              currentMeterReadingInput.dispatchEvent(new Event('input'));
               ocrStatus.textContent = `Angka ditemukan: ${foundNumber}`;
             } else {
               ocrStatus.textContent =
-                "Tidak dapat menemukan angka pada gambar.";
+                'Tidak dapat menemukan angka pada gambar.';
             }
           } catch (error) {
-            console.error("OCR Error:", error);
-            ocrStatus.textContent = "Gagal memproses gambar.";
+            console.error('OCR Error:', error);
+            ocrStatus.textContent = 'Gagal memproses gambar.';
           }
         });
 
-        // --- UI Event Listeners ---
-        showAddReadingButton.addEventListener("click", showAddReading);
-        backToDashboardButton.addEventListener("click", showDashboard);
+        showAddReadingButton.addEventListener('click', showAddReading);
+        backToDashboardButton.addEventListener('click', showDashboard);
 
-        // --- FINAL SAVE LOGIC ---
+        function fileToBase64(file) {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = (error) => reject(error);
+          });
+        }
+
         async function executeSave(dataToSave) {
-          saveDataButton.textContent = "Menyimpan...";
+          saveDataButton.textContent = 'Menyimpan...';
           saveDataButton.disabled = true;
-          saveStatusMessage.textContent = "Mengirim data ke sheet...";
-          saveDataButton.classList.remove("bg-blue-600", "hover:bg-blue-700");
-          saveDataButton.classList.add("bg-gray-500");
+          saveStatusMessage.textContent = 'Mengirim data ke sheet...';
+          saveDataButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+          saveDataButton.classList.add('bg-gray-500');
 
           try {
+            if (selectedFile) {
+              dataToSave.imageData = await fileToBase64(selectedFile);
+              dataToSave.mimeType = selectedFile.type;
+              selectedFile = null;
+            }
+
             const response = await fetch(SCRIPT_URL, {
-              method: "POST",
-              mode: "cors",
-              redirect: "follow",
+              method: 'POST',
+              mode: 'cors',
+              redirect: 'follow',
               headers: {
-                "Content-Type": "text/plain;charset=utf-8",
+                'Content-Type': 'text/plain;charset=utf-8',
               },
               body: JSON.stringify(dataToSave),
             });
@@ -761,58 +901,54 @@
 
             const result = await response.json();
 
-            if (result.status === "success") {
-              saveDataButton.textContent = "Tersimpan!";
-              saveDataButton.classList.remove("bg-gray-500");
-              saveDataButton.classList.add("bg-green-600");
-              saveStatusMessage.textContent = "Data disimpan! Memuat ulang...";
+            if (result.status === 'success') {
+              saveDataButton.textContent = 'Tersimpan!';
+              saveDataButton.classList.remove('bg-gray-500');
+              saveDataButton.classList.add('bg-green-600');
+              saveStatusMessage.textContent = 'Data disimpan! Memuat ulang...';
 
-              // --- FIX: OPTIMISTIC UI UPDATE ---
-              // Instead of re-fetching, we add the data we just saved directly to our local data.
+              dataToSave.foto = result.imageUrl;
 
               const existingReadingIndex = currentUserData.readings.findIndex(
                 (r) => r.month.toLowerCase() === dataToSave.month.toLowerCase(),
               );
               if (existingReadingIndex > -1) {
-                // If data for the month exists (overwrite), replace it.
                 currentUserData.readings[existingReadingIndex] = dataToSave;
               } else {
-                // If it's a new month, add it.
                 currentUserData.readings.push(dataToSave);
               }
 
-              // Go back to the dashboard after a short delay to show the success message.
               setTimeout(() => {
                 showDashboard();
               }, 1500);
             } else {
               throw new Error(
-                result.message || "Skrip mengembalikan kesalahan.",
+                result.message || 'Skrip mengembalikan kesalahan.',
               );
             }
           } catch (error) {
-            console.error("Error saving data:", error);
-            saveDataButton.textContent = "Error!";
-            saveDataButton.classList.remove("bg-gray-500");
-            saveDataButton.classList.add("bg-red-600");
+            console.error('Error saving data:', error);
+            saveDataButton.textContent = 'Error!';
+            saveDataButton.classList.remove('bg-gray-500');
+            saveDataButton.classList.add('bg-red-600');
             saveStatusMessage.textContent = `Error: ${error.message}`;
           } finally {
             setTimeout(() => {
-              saveDataButton.textContent = "Simpan ke Sheet";
+              saveDataButton.textContent = 'Simpan ke Sheet';
               saveDataButton.disabled = false;
-              saveDataButton.classList.remove("bg-green-600", "bg-red-600");
-              saveDataButton.classList.add("bg-blue-600", "hover:bg-blue-700");
-              saveStatusMessage.textContent = "";
+              saveDataButton.classList.remove('bg-green-600', 'bg-red-600');
+              saveDataButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+              saveStatusMessage.textContent = '';
             }, 6000);
           }
         }
 
-        saveDataButton.addEventListener("click", () => {
+        saveDataButton.addEventListener('click', () => {
           const meteran = currentMeterReadingInput.value;
-          const usageText = resultUsage.textContent.replace(" m³", "");
-          const billText = resultBill.textContent.replace(/[^0-9]/g, "");
+          const usageText = resultUsage.textContent.replace(' m³', '');
+          const billText = resultBill.textContent.replace(/[^0-9]/g, '');
           const date = new Date();
-          const monthName = date.toLocaleString("default", { month: "long" });
+          const monthName = date.toLocaleString('default', { month: 'long' });
 
           dataToSaveOnClick = {
             name: currentUserData.name,
@@ -827,29 +963,28 @@
           );
 
           if (readingExists) {
-            confirmModal.classList.add("active");
+            confirmModal.classList.add('active');
           } else {
             executeSave(dataToSaveOnClick);
           }
         });
 
-        modalConfirmButton.addEventListener("click", () => {
-          confirmModal.classList.remove("active");
+        modalConfirmButton.addEventListener('click', () => {
+          confirmModal.classList.remove('active');
           executeSave(dataToSaveOnClick);
         });
 
-        modalCancelButton.addEventListener("click", () => {
-          confirmModal.classList.remove("active");
+        modalCancelButton.addEventListener('click', () => {
+          confirmModal.classList.remove('active');
         });
 
-        // NEW: Refresh button logic
         async function refreshDashboardData() {
-          const icon = document.getElementById("refresh-icon");
-          icon.classList.add("spin-animation");
+          const icon = document.getElementById('refresh-icon');
+          icon.classList.add('spin-animation');
           refreshDataButton.disabled = true;
 
           try {
-            allUsersData = await fetchSheetData();
+            allUsersData = await fetchSheetData(false);
             const user = allUsersData.find(
               (u) =>
                 u.name.toLowerCase() === currentUserData.name.toLowerCase(),
@@ -861,13 +996,52 @@
               logoutButton.click();
             }
           } catch (error) {
-            console.error("Gagal memuat ulang data:", error);
+            console.error('Gagal memuat ulang data:', error);
           } finally {
-            icon.classList.remove("spin-animation");
+            icon.classList.remove('spin-animation');
             refreshDataButton.disabled = false;
           }
         }
-        refreshDataButton.addEventListener("click", refreshDashboardData);
+        refreshDataButton.addEventListener('click', refreshDashboardData);
+
+        adminLoginButton.addEventListener('click', () => {
+          const password = prompt('Masukkan kata sandi admin:', '');
+          if (password === 'admin123') {
+            // Simple password check
+            showAdminDashboard();
+          } else if (password) {
+            alert('Kata sandi salah.');
+          }
+        });
+
+        // --- IMAGE MODAL LOGIC (FIXED) ---
+        document.body.addEventListener('click', (e) => {
+          if (e.target.classList.contains('view-photo-button')) {
+            const originalUrl = e.target.dataset.imgUrl;
+            // Extract file ID from a standard Google Drive sharing URL
+            const fileIdMatch = originalUrl.match(/d\/(.*?)\//);
+            if (fileIdMatch && fileIdMatch[1]) {
+              const fileId = fileIdMatch[1];
+              // Use the direct image viewing URL format
+              const directImageUrl = `https://drive.google.com/uc?id=${fileId}`;
+              modalImage.src = directImageUrl;
+              imageModal.classList.add('active');
+            } else {
+              alert('Tautan gambar tidak valid atau format tidak dikenali.');
+            }
+          }
+        });
+
+        imageModalClose.addEventListener('click', () => {
+          imageModal.classList.remove('active');
+          modalImage.src = '';
+        });
+        imageModal.addEventListener('click', (e) => {
+          if (e.target === imageModal) {
+            imageModal.classList.remove('active');
+            modalImage.src = '';
+          }
+        });
 
         // Initial load
         showLogin();
